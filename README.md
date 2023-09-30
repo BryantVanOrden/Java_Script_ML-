@@ -11,6 +11,6 @@ Development Environment
 I used Visual studio Code and JavaScript and HTML. I used Xampp to host the local server to host the website. 
 
 # Useful Websites
-This website is also a helpful resource to anyone wanting to learn python:
+This website is also a helpful resource to anyone wanting to learn javascript:
 
 W3Schools
