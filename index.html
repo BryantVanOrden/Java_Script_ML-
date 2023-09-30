@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV Machine Learning</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>CSV Machine Learning</h1>
+
+    <button onclick="runMachineLearning()">Run Machine Learning</button>
+
+    <div id="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <script>
+        async function loadData() {
+
+            const response = await fetch('data.csv'); 
+            if (!response.ok) {
+                throw new Error('Failed to load data');
+            }
+            const csvData = await response.text();
+            const { data, meta } = Papa.parse(csvData, {
+                header: true,
+                skipEmptyLines: true,
+            });
+
+            return data;
+        }
+
+        function preprocessData(data) {
+            const X = data.map(row => [parseFloat(row.feature1), parseFloat(row.feature2)]); 
+            const y = data.map(row => parseFloat(row.target)); 
+
+            return { X, y };
+        }
+
+        function createAndTrainModel(X, y) {
+            
+            const model = tf.sequential();
+            model.add(tf.layers.dense({ units: 1, inputShape: [X[0].length] }));
+            model.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
+
+            const XTensor = tf.tensor(X);
+            const yTensor = tf.tensor(y);
+
+            model.fit(XTensor, yTensor, {
+                epochs: 100, 
+            });
+
+            return model;
+        }
+
+        function generatePredictions(model, X) {
+            
+            const XTensor = tf.tensor(X);
+            const y_predTensor = model.predict(XTensor);
+            const y_pred = Array.from(y_predTensor.dataSync());
+
+            return y_pred;
+        }
+
+        async function runMachineLearning() {
+            try {
+                const data = await loadData();
+                const { X, y } = preprocessData(data);
+                const model = createAndTrainModel(X, y);
+                const y_pred = generatePredictions(model, X);
+
+                
+                const ctx = document.getElementById("chart").getContext("2d");
+                const chart = new Chart(ctx, {
+                    type: "scatter", 
+                    data: {
+                        datasets: [
+                            {
+                                label: "Predicted Values",
+                                borderColor: "transparent",
+                                backgroundColor: "green", 
+                                pointBorderColor: "transparent", 
+                                pointBackgroundColor: "green", 
+                                pointRadius: 5, 
+                                pointHoverRadius: 5, 
+                                data: y.map((value, index) => ({ x: index, y: value })), 
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: false, 
+                        scales: {
+                            x: {
+                                type: "linear",
+                                position: "bottom",
+                            },
+                            y: {
+                                type: "linear",
+                                position: "left",
+                            },
+                        },
+                    },
+                });
+
+            } catch (error) {
+                console.error('An error occurred:', error);
+            }
+        }
+    </script>
+</body>
+</html>
